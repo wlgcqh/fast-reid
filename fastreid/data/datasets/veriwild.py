@@ -30,14 +30,18 @@ class VeRiWild(ImageDataset):
         self.dataset_dir = osp.join(root, self.dataset_dir)
 
         self.image_dir = osp.join(self.dataset_dir, 'images')
-        self.train_list = osp.join(self.dataset_dir, 'train_test_split/train_list.txt')
-        self.vehicle_info = osp.join(self.dataset_dir, 'train_test_split/vehicle_info.txt')
+        self.train_list = osp.join(
+            self.dataset_dir, 'train_test_split/train_list.txt')
+        self.vehicle_info = osp.join(
+            self.dataset_dir, 'train_test_split/vehicle_info.txt')
         if query_list and gallery_list:
             self.query_list = query_list
             self.gallery_list = gallery_list
         else:
-            self.query_list = osp.join(self.dataset_dir, 'train_test_split/test_10000_query.txt')
-            self.gallery_list = osp.join(self.dataset_dir, 'train_test_split/test_10000.txt')
+            self.query_list = osp.join(
+                self.dataset_dir, 'train_test_split/test_10000_query.txt')
+            self.gallery_list = osp.join(
+                self.dataset_dir, 'train_test_split/test_10000.txt')
 
         required_files = [
             self.image_dir,
@@ -48,7 +52,8 @@ class VeRiWild(ImageDataset):
         ]
         self.check_before_run(required_files)
 
-        self.imgid2vid, self.imgid2camid, self.imgid2imgpath = self.process_vehicle(self.vehicle_info)
+        self.imgid2vid, self.imgid2camid, self.imgid2imgpath = self.process_vehicle(
+            self.vehicle_info)
 
         train = self.process_dir(self.train_list)
         query = self.process_dir(self.query_list, is_train=False)
@@ -63,10 +68,11 @@ class VeRiWild(ImageDataset):
         for idx, line in enumerate(img_list_lines):
             line = line.strip()
             vid = int(line.split('/')[0])
-            imgid = line.split('/')[1]
+            imgid = line.strip().split('.')[0].split('/')[1]
             if is_train:
                 vid = self.dataset_name + "_" + str(vid)
-            dataset.append((self.imgid2imgpath[imgid], vid, int(self.imgid2camid[imgid])))
+            dataset.append(
+                (self.imgid2imgpath[imgid], vid, int(self.imgid2camid[imgid])))
 
         assert len(dataset) == len(img_list_lines)
         return dataset
@@ -77,7 +83,7 @@ class VeRiWild(ImageDataset):
         imgid2imgpath = {}
         vehicle_info_lines = open(vehicle_info, 'r').readlines()
 
-        for idx, line in enumerate(vehicle_info_lines[1:]):
+        for idx, line in enumerate(vehicle_info_lines):
             vid = line.strip().split('/')[0]
             imgid = line.strip().split(';')[0].split('/')[1]
             camid = line.strip().split(';')[1]
@@ -86,7 +92,7 @@ class VeRiWild(ImageDataset):
             imgid2camid[imgid] = camid
             imgid2imgpath[imgid] = img_path
 
-        assert len(imgid2vid) == len(vehicle_info_lines) - 1
+        assert len(imgid2vid) == len(vehicle_info_lines)
         return imgid2vid, imgid2camid, imgid2imgpath
 
 
@@ -100,10 +106,13 @@ class SmallVeRiWild(VeRiWild):
 
     def __init__(self, root='datasets', **kwargs):
         dataset_dir = osp.join(root, self.dataset_dir)
-        self.query_list = osp.join(dataset_dir, 'train_test_split/test_3000_query.txt')
-        self.gallery_list = osp.join(dataset_dir, 'train_test_split/test_3000.txt')
+        self.query_list = osp.join(
+            dataset_dir, 'train_test_split/test_3000_query.txt')
+        self.gallery_list = osp.join(
+            dataset_dir, 'train_test_split/test_3000.txt')
 
-        super(SmallVeRiWild, self).__init__(root, self.query_list, self.gallery_list, **kwargs)
+        super(SmallVeRiWild, self).__init__(
+            root, self.query_list, self.gallery_list, **kwargs)
 
 
 @DATASET_REGISTRY.register()
@@ -116,10 +125,13 @@ class MediumVeRiWild(VeRiWild):
 
     def __init__(self, root='datasets', **kwargs):
         dataset_dir = osp.join(root, self.dataset_dir)
-        self.query_list = osp.join(dataset_dir, 'train_test_split/test_5000_query.txt')
-        self.gallery_list = osp.join(dataset_dir, 'train_test_split/test_5000.txt')
+        self.query_list = osp.join(
+            dataset_dir, 'train_test_split/test_5000_query.txt')
+        self.gallery_list = osp.join(
+            dataset_dir, 'train_test_split/test_5000.txt')
 
-        super(MediumVeRiWild, self).__init__(root, self.query_list, self.gallery_list, **kwargs)
+        super(MediumVeRiWild, self).__init__(
+            root, self.query_list, self.gallery_list, **kwargs)
 
 
 @DATASET_REGISTRY.register()
@@ -132,7 +144,10 @@ class LargeVeRiWild(VeRiWild):
 
     def __init__(self, root='datasets', **kwargs):
         dataset_dir = osp.join(root, self.dataset_dir)
-        self.query_list = osp.join(dataset_dir, 'train_test_split/test_10000_query.txt')
-        self.gallery_list = osp.join(dataset_dir, 'train_test_split/test_10000.txt')
+        self.query_list = osp.join(
+            dataset_dir, 'train_test_split/test_10000_query.txt')
+        self.gallery_list = osp.join(
+            dataset_dir, 'train_test_split/test_10000.txt')
 
-        super(LargeVeRiWild, self).__init__(root, self.query_list, self.gallery_list, **kwargs)
+        super(LargeVeRiWild, self).__init__(
+            root, self.query_list, self.gallery_list, **kwargs)
