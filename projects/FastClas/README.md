@@ -1,4 +1,4 @@
-# FastCls in FastReID
+# FastClas in FastReID
 
 This project provides a baseline and example for image classification based on fastreid.
 
@@ -12,5 +12,5 @@ your own datasets and model.
 
 If you want to train models with 4 gpus, you can run
 ```bash
-python3 projects/FastCls/train_net.py --config-file projects/FastCls/config/base-cls.yml --num-gpus 4
+python3 projects/FastClas/train_net.py --config-file projects/FastClas/config/base-clas.yml --num-gpus 4
 ```

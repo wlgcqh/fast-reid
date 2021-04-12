@@ -10,8 +10,8 @@ import time
 from collections import Counter
 
 import torch
-from apex.parallel import DistributedDataParallel
 from torch import nn
+from torch.nn.parallel import DistributedDataParallel
 
 from fastreid.evaluation.testing import flatten_results_dict
 from fastreid.solver import optim
@@ -360,19 +360,21 @@ class EvalHook(HookBase):
                     )
             self.trainer.storage.put_scalars(**flattened_results, smoothing_hint=False)
 
-        # Remove extra memory cache of main process due to evaluation
         torch.cuda.empty_cache()
-
-    def after_epoch(self):
-        next_epoch = self.trainer.epoch + 1
-        is_final = next_epoch == self.trainer.max_epoch
-        if is_final or (self._period > 0 and next_epoch % self._period == 0):
-            self._do_eval()
         # Evaluation may take different time among workers.
         # A barrier make them start the next iteration together.
         comm.synchronize()
 
+    def after_epoch(self):
+        next_epoch = self.trainer.epoch + 1
+        if self._period > 0 and next_epoch % self._period == 0:
+            self._do_eval()
+
     def after_train(self):
+        next_epoch = self.trainer.epoch + 1
+        # This condition is to prevent the eval from running after a failed training
+        if next_epoch % self._period != 0 and next_epoch >= self.trainer.max_epoch:
+            self._do_eval()
         # func is likely a closure that holds reference to the trainer
         # therefore we clean it to avoid circular reference in the end
         del self._func
