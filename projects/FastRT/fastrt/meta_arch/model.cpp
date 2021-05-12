@@ -1,4 +1,9 @@
 #include "fastrt/model.h"
+#include "fastrt/calibrator.h"
+
+#ifdef BUILD_INT8
+#include "fastrt/config.h"
+#endif 
 
 namespace fastrt {
 
@@ -68,9 +73,21 @@ namespace fastrt {
         /* Build engine */ 
         builder->setMaxBatchSize(_engineCfg.max_batch_size);
         config->setMaxWorkspaceSize(1 << 20);
-#ifdef BUILD_FP16
+#if defined(BUILD_FP16) && defined(BUILD_INT8)
+        std::cout << "Flag confilct! BUILD_FP16 and BUILD_INT8 can't be both True!" << std::endl;
+        return null;
+#endif 
+#if defined(BUILD_FP16)
         std::cout << "[Build fp16]" << std::endl;
         config->setFlag(BuilderFlag::kFP16);
+#elif defined(BUILD_INT8)
+        std::cout << "[Build int8]" << std::endl;
+        std::cout << "Your platform support int8: " << (builder->platformHasFastInt8() ? "true" : "false") << std::endl;
+        TRTASSERT(builder->platformHasFastInt8());
+        config->setFlag(BuilderFlag::kINT8);
+        Int8EntropyCalibrator2* calibrator = new Int8EntropyCalibrator2(1, _engineCfg.input_w, _engineCfg.input_h, 
+            INT8_CALIBRATE_DATASET_PATH.c_str(), "int8calib.table", _engineCfg.input_name.c_str());
+        config->setInt8Calibrator(calibrator);
 #endif 
         auto engine = make_holder(builder->buildEngineWithConfig(*network, *config));
         std::cout << "[TRT engine build out]" << std::endl;

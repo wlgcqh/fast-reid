@@ -9,12 +9,12 @@ import os
 
 import torch
 from torch._six import container_abcs, string_classes, int_classes
-from torch.utils.data import DataLoader
 
 from fastreid.config import configurable
 from fastreid.utils import comm
 from . import samplers
 from .common import CommDataset
+from .data_utils import DataLoaderX
 from .datasets import DATASET_REGISTRY
 from .transforms import build_transforms
 
@@ -56,6 +56,8 @@ def _train_loader_from_config(cfg, *, train_set=None, transforms=None, sampler=N
         elif sampler_name == "SetReWeightSampler":
             set_weight = cfg.DATALOADER.SET_WEIGHT
             sampler = samplers.SetReWeightSampler(train_set.img_items, mini_batch_size, num_instance, set_weight)
+        elif sampler_name == "ImbalancedDatasetSampler":
+            sampler = samplers.ImbalancedDatasetSampler(train_set.img_items)
         else:
             raise ValueError("Unknown training sampler: {}".format(sampler_name))
 
@@ -83,13 +85,15 @@ def build_reid_train_loader(
 
     batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, mini_batch_size, True)
 
-    train_loader = torch.utils.data.DataLoader(
-        train_set,
+    train_loader = DataLoaderX(
+        comm.get_local_rank(),
+        dataset=train_set,
         num_workers=num_workers,
         batch_sampler=batch_sampler,
         collate_fn=fast_batch_collator,
         pin_memory=True,
     )
+
     return train_loader
 
 
@@ -142,8 +146,9 @@ def build_reid_test_loader(test_set, test_batch_size, num_query, num_workers=4):
     mini_batch_size = test_batch_size // comm.get_world_size()
     data_sampler = samplers.InferenceSampler(len(test_set))
     batch_sampler = torch.utils.data.BatchSampler(data_sampler, mini_batch_size, False)
-    test_loader = DataLoader(
-        test_set,
+    test_loader = DataLoaderX(
+        comm.get_local_rank(),
+        dataset=test_set,
         batch_sampler=batch_sampler,
         num_workers=num_workers,  # save some memory
         collate_fn=fast_batch_collator,
