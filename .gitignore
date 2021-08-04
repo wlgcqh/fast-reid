@@ -1,5 +1,5 @@
 checkpoints/
-datasets/
+datasets/*
 logs
 
 # compilation and distribution
