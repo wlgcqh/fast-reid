@@ -17,34 +17,26 @@ import tqdm
 def get_parser():
     parser = argparse.ArgumentParser(description="onnx model inference")
 
-    parser.add_argument(
-        "--model-path",
-        default="onnx_model/baseline.onnx",
-        help="onnx model path"
-    )
+    parser.add_argument("--model-path",
+                        default="onnx_model/baseline.onnx",
+                        help="onnx model path")
     parser.add_argument(
         "--input",
         nargs="+",
         help="A list of space separated input images; "
-             "or a single glob pattern such as 'directory/*.jpg'",
+        "or a single glob pattern such as 'directory/*.jpg'",
     )
-    parser.add_argument(
-        "--output",
-        default='onnx_output',
-        help='path to save converted caffe model'
-    )
-    parser.add_argument(
-        "--height",
-        type=int,
-        default=256,
-        help="height of image"
-    )
-    parser.add_argument(
-        "--width",
-        type=int,
-        default=128,
-        help="width of image"
-    )
+    parser.add_argument("--output",
+                        default='onnx_output',
+                        help='path to save converted caffe model')
+    parser.add_argument("--height",
+                        type=int,
+                        default=256,
+                        help="height of image")
+    parser.add_argument("--width",
+                        type=int,
+                        default=128,
+                        help="width of image")
     return parser
 
 
@@ -54,7 +46,8 @@ def preprocess(image_path, image_height, image_width):
     original_image = original_image[:, :, ::-1]
 
     # Apply pre-processing to image.
-    img = cv2.resize(original_image, (image_width, image_height), interpolation=cv2.INTER_CUBIC)
+    img = cv2.resize(original_image, (image_width, image_height),
+                     interpolation=cv2.INTER_CUBIC)
     img = img.astype("float32").transpose(2, 0, 1)[np.newaxis]  # (1, 3, h, w)
     return img
 
@@ -81,5 +74,8 @@ if __name__ == "__main__":
         for path in tqdm.tqdm(args.input):
             image = preprocess(path, args.height, args.width)
             feat = ort_sess.run(None, {input_name: image})[0]
-            feat = normalize(feat, axis=1)
-            np.save(os.path.join(args.output, path.replace('.jpg', '.npy').split('/')[-1]), feat)
+            #feat = normalize(feat, axis=1)
+            np.save(
+                os.path.join(args.output,
+                             path.replace('.jpg', '.npy').split('/')[-1]),
+                feat)

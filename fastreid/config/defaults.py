@@ -66,8 +66,12 @@ _C.MODEL.HEADS.NAME = "EmbeddingHead"
 _C.MODEL.HEADS.NORM = "BN"
 # Number of identity
 _C.MODEL.HEADS.NUM_CLASSES = 0
+# Embedding head in head
+_C.MODEL.HEADS.EMBEDDING_HEAD = "fc"
 # Embedding dimension in head
 _C.MODEL.HEADS.EMBEDDING_DIM = 0
+# dropout prob in head
+_C.MODEL.HEADS.DROPOUT_PROB = 0
 # If use BNneck in embedding
 _C.MODEL.HEADS.WITH_BNNECK = False
 # Triplet feature using feature before(after) bnneck
@@ -108,6 +112,10 @@ _C.MODEL.LOSSES.TRI.MARGIN = 0.3
 _C.MODEL.LOSSES.TRI.NORM_FEAT = False
 _C.MODEL.LOSSES.TRI.HARD_MINING = False
 _C.MODEL.LOSSES.TRI.SCALE = 1.0
+
+# SupContrast Loss options
+_C.MODEL.LOSSES.SUPCON = CN()
+_C.MODEL.LOSSES.SUPCON.SCALE = 1.0
 
 # Circle Loss options
 _C.MODEL.LOSSES.CIRCLE = CN()

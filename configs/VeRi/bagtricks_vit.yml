@@ -22,6 +22,7 @@ MODEL:
     POOL_LAYER: Identity
     NECK_FEAT: before
     CLS_LAYER: Linear
+    EMBEDDING_DIM: 256
 
   LOSSES:
     NAME: ("CrossEntropyLoss", "TripletLoss",)
@@ -37,8 +38,8 @@ MODEL:
       SCALE: 1.
 
 INPUT:
-  SIZE_TRAIN: [ 256, 128 ]
-  SIZE_TEST: [ 256, 128 ]
+  SIZE_TRAIN: [ 256, 256 ]
+  SIZE_TEST: [ 256, 256 ]
 
   REA:
     ENABLED: True
@@ -82,7 +83,7 @@ TEST:
 CUDNN_BENCHMARK: True
 
 DATASETS:
-  NAMES: ("Market1501",)
-  TESTS: ("Market1501",)
+  NAMES: ("VeRi",)
+  TESTS: ("VeRi",)
 
-OUTPUT_DIR: logs/market1501/sbs_vit_base
+OUTPUT_DIR: logs/veri/sbs_vit_base

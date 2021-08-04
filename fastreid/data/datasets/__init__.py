@@ -39,5 +39,7 @@ from .cuhk_sysu import cuhkSYSU
 from .veri import VeRi
 from .vehicleid import VehicleID, SmallVehicleID, MediumVehicleID, LargeVehicleID
 from .veriwild import VeRiWild, SmallVeRiWild, MediumVeRiWild, LargeVeRiWild
+from .vehicle1m import Vehicle1M, SmallVehicle1M, MediumVehicle1M,LargeVehicle1M
+from .hangzhou_plate import HangzhouPlate
 
 __all__ = [k for k in globals().keys() if "builtin" not in k and not k.startswith("_")]
