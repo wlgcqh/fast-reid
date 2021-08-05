@@ -4,7 +4,7 @@
 Author             : beiqi.qh (beiqi.qh@alibaba-inc.com)
 Date               : 2021-08-03 17:16:48
 Last Modified By   : beiqi.qh (beiqi.qh@alibaba-inc.com)
-Last Modified Date : 2021-08-03 17:42:04
+Last Modified Date : 2021-08-05 17:45:31
 Description        : multi-head 
 -------- 
 Copyright (c) 2021 Alibaba Inc. 
@@ -28,30 +28,6 @@ class Reshape(nn.Module):
 
     def forward(self, x):
         return x.view((x.size(0), ) + self.shape)
-
-
-def weights_init_kaiming(m):
-    classname = m.__class__.__name__
-    if classname.find('Linear') != -1:
-        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_out')
-        nn.init.constant_(m.bias, 0.0)
-    elif classname.find('Conv') != -1:
-        nn.init.kaiming_normal_(m.weight, a=0, mode='fan_in')
-        if m.bias is not None:
-            nn.init.constant_(m.bias, 0.0)
-    elif classname.find('BatchNorm') != -1:
-        if m.affine:
-            #nn.init.constant_(m.weight, 1.0)
-            nn.init.normal_(m.weight, std=0.001)
-            nn.init.constant_(m.bias, 0.0)
-
-
-def weights_init_classifier(m):
-    classname = m.__class__.__name__
-    if classname.find('Linear') != -1:
-        nn.init.normal_(m.weight, std=0.001)
-        if m.bias:
-            nn.init.constant_(m.bias, 0.0)
 
 
 def build_embedding_head(option, input_dim, output_dim, dropout_prob):
@@ -223,6 +199,7 @@ class MultiHead(nn.Module):
 
     def reset_parameters(self) -> None:
         self.bottleneck.apply(weights_init_kaiming)
+        self.MultiHeads.apply(weights_init_kaiming)
         nn.init.normal_(self.weight, std=0.01)
 
     @classmethod
