@@ -15,30 +15,43 @@ from fastreid.layers.weight_init import weights_init_kaiming
 from .build import REID_HEADS_REGISTRY
 
 
-class Reshape(nn.Module):
-    def __init__(self, *args):
-        super(Reshape, self).__init__()
-        self.shape = args
-
-    def forward(self, x):
-        return x.view((x.size(0), ) + self.shape)
+def build_embedding_head(option, input_dim, output_dim, dropout_prob):
+    reduce = None
+    if option == 'fc':
+        reduce = nn.Linear(input_dim, output_dim, bias=False)
+    elif option == 'conv':
+        reduce = nn.Conv2d(input_dim, output_dim, 1, 1, bias=False)
+    elif option == 'dropout_fc':
+        reduce = [
+            nn.Dropout(p=dropout_prob),
+            nn.Linear(input_dim, output_dim, bias=False)
+        ]
+        reduce = nn.Sequential(*reduce)
+    elif option == 'bn_dropout_fc':
+        reduce = [
+            nn.BatchNorm1d(input_dim),
+            nn.Dropout(p=dropout_prob),
+            nn.Linear(input_dim, output_dim, bias=False)
+        ]
+        reduce = nn.Sequential(*reduce)
+    elif option == 'mlp':
+        reduce = [
+            nn.Linear(input_dim, output_dim, bias=False),
+            nn.ReLU(inplace=True),
+            nn.Linear(output_dim, output_dim, bias=False),
+        ]
+        reduce = nn.Sequential(*reduce)
+    else:
+        print('unsupported embedding head options {}'.format(option))
+    return reduce
 
 
 @REID_HEADS_REGISTRY.register()
-class EmbeddingHead(nn.Module):
-    """
-    EmbeddingHead perform all feature aggregation in an embedding task, such as reid, image retrieval
-    and face recognition
-
-    It typically contains logic to
-
-    1. feature aggregation via global average pooling and generalized mean pooling
-    2. (optional) batchnorm, dimension reduction and etc.
-    2. (in training only) margin-based softmax logits computation
-    """
+class ReduceHead(nn.Module):
     @configurable
-    def __init__(self, *, feat_dim, embedding_dim, num_classes, neck_feat,
-                 pool_type, cls_type, scale, margin, with_bnneck, norm_type):
+    def __init__(self, *, feat_dim, embedding_head, embedding_dim,
+                 dropout_prob, num_classes, neck_feat, pool_type, cls_type,
+                 scale, margin, with_bnneck, norm_type):
         """
         NOTE: this interface is experimental.
 
@@ -65,21 +78,27 @@ class EmbeddingHead(nn.Module):
 
         neck = []
         if embedding_dim > 0:
-            if pool_type == "Identity":
-                m = nn.Linear(feat_dim * 16 * 16, embedding_dim)
-                nn.init.xavier_normal_(m.weight)
-                nn.init.constant_(m.bias, 0)
-                neck.append(m)
-            else:
-                neck.append(nn.Conv2d(feat_dim, embedding_dim, 1, 1, bias=False))
-                #neck.append(Reshape(feat_dim))
-                #neck.append(nn.Linear(feat_dim, embedding_dim, bias=False))
-                #neck.append(Reshape(embedding_dim, 1, 1))
+            # if pool_type == "Identity":
+            #     m = nn.Linear(feat_dim * 16 * 16, embedding_dim)
+            #     nn.init.xavier_normal_(m.weight)
+            #     nn.init.constant_(m.bias, 0)
+            #     neck.append(m)
+            # else:
+            #     neck.append(
+            #         nn.Conv2d(feat_dim, embedding_dim, 1, 1, bias=False))
+            #     #neck.append(Reshape(feat_dim))
+            #     #neck.append(nn.Linear(feat_dim, embedding_dim, bias=False))
+            #     #neck.append(Reshape(embedding_dim, 1, 1))
 
+            reduce_head = build_embedding_head(embedding_head, feat_dim,
+                                               embedding_dim, dropout_prob)
+            neck.append(reduce_head)
             feat_dim = embedding_dim
 
         if with_bnneck:
-            neck.append(get_norm(norm_type, feat_dim, bias_freeze=True))
+            bn = nn.BatchNorm1d(feat_dim)
+            bn.bias.requires_grad_(False)
+            neck.append(bn)
 
         self.bottleneck = nn.Sequential(*neck)
 
@@ -100,7 +119,9 @@ class EmbeddingHead(nn.Module):
     def from_config(cls, cfg):
         # fmt: off
         feat_dim = cfg.MODEL.BACKBONE.FEAT_DIM
+        embedding_head = cfg.MODEL.HEADS.EMBEDDING_HEAD
         embedding_dim = cfg.MODEL.HEADS.EMBEDDING_DIM
+        dropout_prob = cfg.MODEL.HEADS.DROPOUT_PROB
         num_classes = cfg.MODEL.HEADS.NUM_CLASSES
         neck_feat = cfg.MODEL.HEADS.NECK_FEAT
         pool_type = cfg.MODEL.HEADS.POOL_LAYER
@@ -112,7 +133,9 @@ class EmbeddingHead(nn.Module):
         # fmt: on
         return {
             'feat_dim': feat_dim,
+            'embedding_head': embedding_head,
             'embedding_dim': embedding_dim,
+            'dropout_prob': dropout_prob,
             'num_classes': num_classes,
             'neck_feat': neck_feat,
             'pool_type': pool_type,
@@ -128,9 +151,8 @@ class EmbeddingHead(nn.Module):
         See :class:`ReIDHeads.forward`.
         """
         pool_feat = self.pool_layer(features)
+        pool_feat = pool_feat[..., 0, 0]
         neck_feat = self.bottleneck(pool_feat)
-        neck_feat = neck_feat[..., 0, 0]
-
         # Evaluation
         # fmt: off
         if not self.training: return neck_feat
@@ -146,7 +168,7 @@ class EmbeddingHead(nn.Module):
         cls_outputs = self.cls_layer(logits.clone(), targets)
 
         # fmt: off
-        if self.neck_feat == 'before': feat = pool_feat[..., 0, 0]
+        if self.neck_feat == 'before': feat = pool_feat
         elif self.neck_feat == 'after': feat = neck_feat
         else:
             raise KeyError(

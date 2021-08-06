@@ -84,7 +84,7 @@ class VeRiWild(ImageDataset):
         imgid2imgpath = {}
         vehicle_info_lines = open(vehicle_info, 'r').readlines()
 
-        for idx, line in enumerate(vehicle_info_lines[:]):
+        for idx, line in enumerate(vehicle_info_lines):
             vid = line.strip().split('/')[0]
             imgid = line.strip().split(';')[0].split('/')[1]
             camid = line.strip().split(';')[1]

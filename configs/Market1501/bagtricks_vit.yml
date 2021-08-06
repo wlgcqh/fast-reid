@@ -9,7 +9,7 @@ MODEL:
     DEPTH: base
     FEAT_DIM: 768
     PRETRAIN: True
-    PRETRAIN_PATH: /export/home/lxy/.cache/torch/checkpoints/jx_vit_base_p16_224-80ecf9dd.pth
+    PRETRAIN_PATH: /disk1/beiqi/workplace/fast-reid/checkpoints/jx_vit_base_p16_224-80ecf9dd.pth 
     STRIDE_SIZE: (16, 16)
     DROP_PATH_RATIO: 0.1
     DROP_RATIO: 0.0

@@ -19,6 +19,10 @@ import onnxoptimizer
 import torch
 from onnxsim import simplify
 from torch.onnx import OperatorExportTypes
+import numpy as np
+import time
+import onnxruntime
+import cv2
 
 sys.path.append('.')
 
@@ -45,29 +49,24 @@ def setup_cfg(args):
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description="Convert Pytorch to ONNX model")
+    parser = argparse.ArgumentParser(
+        description="Convert Pytorch to ONNX model")
 
     parser.add_argument(
         "--config-file",
         metavar="FILE",
         help="path to config file",
     )
-    parser.add_argument(
-        "--name",
-        default="baseline",
-        help="name for converted model"
-    )
-    parser.add_argument(
-        "--output",
-        default='onnx_model',
-        help='path to save converted onnx model'
-    )
-    parser.add_argument(
-        '--batch-size',
-        default=1,
-        type=int,
-        help="the maximum batch size of onnx runtime"
-    )
+    parser.add_argument("--name",
+                        default="baseline",
+                        help="name for converted model")
+    parser.add_argument("--output",
+                        default='onnx_model',
+                        help='path to save converted onnx model')
+    parser.add_argument('--batch-size',
+                        default=1,
+                        type=int,
+                        help="the maximum batch size of onnx runtime")
     parser.add_argument(
         "--opts",
         help="Modify config options using the command-line 'KEY VALUE' pairs",
@@ -96,6 +95,18 @@ def remove_initializer_from_input(model):
     return model
 
 
+def preprocess(image_path, image_height, image_width):
+    original_image = cv2.imread(image_path)
+    # the model expects RGB inputs
+    original_image = original_image[:, :, ::-1]
+
+    # Apply pre-processing to image.
+    img = cv2.resize(original_image, (image_width, image_height),
+                     interpolation=cv2.INTER_CUBIC)
+    img = img.astype("float32").transpose(2, 0, 1)[np.newaxis]  # (1, 3, h, w)
+    return img
+
+
 def export_onnx_model(model, inputs):
     """
     Trace and export a model to onnx format.
@@ -118,6 +129,8 @@ def export_onnx_model(model, inputs):
     input_names = ['data']
     output_names = ['output']
     # Export the model to ONNX
+    input_names = ['data']
+    output_names = ['output']
     with torch.no_grad():
         with io.BytesIO() as f:
             torch.onnx.export(
@@ -134,7 +147,7 @@ def export_onnx_model(model, inputs):
             onnx_model = onnx.load_from_string(f.getvalue())
 
     logger.info("Completed convert of ONNX model")
-
+    '''
     # Apply ONNX's Optimization
     logger.info("Beginning ONNX model path optimization")
     all_passes = onnxoptimizer.get_available_passes()
@@ -142,6 +155,7 @@ def export_onnx_model(model, inputs):
     assert all(p in all_passes for p in passes)
     onnx_model = onnxoptimizer.optimize(onnx_model, passes)
     logger.info("Completed ONNX model path optimization")
+    '''
     return onnx_model
 
 
@@ -160,18 +174,21 @@ if __name__ == '__main__':
     model.eval()
     logger.info(model)
 
-    inputs = torch.randn(args.batch_size, 3, cfg.INPUT.SIZE_TEST[0], cfg.INPUT.SIZE_TEST[1]).to(model.device)
+    inputs = torch.randn(args.batch_size, 3, cfg.INPUT.SIZE_TEST[0],
+                         cfg.INPUT.SIZE_TEST[1]).to(model.device)
     onnx_model = export_onnx_model(model, inputs)
 
-    #model_simp, check = simplify(onnx_model)
+    # model_simp, check = simplify(onnx_model,
+    #                              input_shapes={'data': [1, 3, 256, 256]},
+    #                              dynamic_input_shape=True)
 
-    #model_simp = remove_initializer_from_input(model_simp)
+    # model_simp = remove_initializer_from_input(model_simp)
 
-    #assert check, "Simplified ONNX model could not be validated"
+    # assert check, "Simplified ONNX model could not be validated"
 
     PathManager.mkdirs(args.output)
 
-    save_path = os.path.join(args.output, args.name+'.onnx')
+    save_path = os.path.join(args.output, args.name + '.onnx')
     onnx.save_model(onnx_model, save_path)
     logger.info("ONNX model file has already saved to {}!".format(save_path))
     # verify pytorch result and onnx result
@@ -179,23 +196,32 @@ if __name__ == '__main__':
 
     input_name = ort_sess.get_inputs()[0].name
     import glob
-    for i in range(10):
-        for path in glob.glob("test_data/*.jpg"):
-            #print(path)
-            #image = preprocess(path, 256, 256)
-            image = np.random.randn(8,3,256,256).astype("float32")
+
+    for path in glob.glob(
+            "/disk1/beiqi/workplace/data/VeRi/image_query/0776_*"):
+        with torch.no_grad():
+            print(path)
+            image = preprocess(path, 256, 256)
+            #image = np.random.randn(8, 3, 256, 256).astype("float32")
             start = time.time()
             onnx_result = ort_sess.run(None, {input_name: image})[0]
             end = time.time()
             print(end - start)
             # feat = normalize(feat, axis=1)
             image_tensor = torch.from_numpy(image)
-            pytorch_result = model(image_tensor).detach().numpy()
-            #print(onnx_result.shape, pytorch_result.shape)
-            #print(onnx_result, pytorch_result)
+            inputs1 = {"images": image_tensor.to(model.device)}
+            inputs2 = {"images": image_tensor.to(model.device)}
+            pytorch_result1 = model(inputs1).cpu()
+            pytorch_result2 = model(inputs2).cpu()
+
+            # print(pytorch_result1.shape, type(pytorch_result1))
+            # print(pytorch_result2.shape, type(pytorch_result2))
+            # print(pytorch_result1)
+            # print(onnx_result.shape, pytorch_result.shape)
+            # print(onnx_result, pytorch_result)
             np.testing.assert_allclose(
                 onnx_result,
-                pytorch_result,
+                pytorch_result1,
                 rtol=1e-03,
                 atol=1e-06,
             )
