@@ -1,41 +1,52 @@
 # encoding: utf-8
-"""
-@author:  Jinkai Zheng
-@contact: 1315673509@qq.com
-"""
+'''
+File: vehicle1m.py
+Project: datasets
+File Created: Thursday, 17th June 2021 4:34:50 pm
+Author: 北齐 (beiqi.qh@alibaba-inc.com)
+-----
+Last Modified: Thursday, 17th June 2021 4:35:11 pm
+Modified By: 北齐 (beiqi.qh@alibaba-inc.com>)
+-----
+Copyright 2021 Alibaba Group AIC.
+'''
+
 
 import os.path as osp
 import random
-
 from .bases import ImageDataset
 from ..datasets import DATASET_REGISTRY
 
 
 @DATASET_REGISTRY.register()
-class VehicleID(ImageDataset):
-    """VehicleID.
+class Vehicle1M(ImageDataset):
+    """Vehicle1M.
 
     Reference:
-        Liu et al. Deep relative distance learning: Tell the difference between similar vehicles. CVPR 2016.
+        Lou et al. A Large-Scale Dataset for Vehicle Re-Identification in the Wild. CVPR 2019.
 
-    URL: `<https://pkuml.org/resources/pku-vehicleid.html>`_
+    URL: `<https://github.com/PKU-IMRE/VERI-Wild>`_
 
     Train dataset statistics:
-        - identities: 13164.
-        - images: 113346.
+        - identities: 50000.
+        - images: 844571.
     """
-    dataset_dir = "vehicleid"
-    dataset_name = "vehicleid"
+    dataset_dir = "Vehicle-1M"
+    dataset_name = "vehicle1m"
 
     def __init__(self, root='datasets', test_list='', **kwargs):
         self.dataset_dir = osp.join(root, self.dataset_dir)
 
         self.image_dir = osp.join(self.dataset_dir, 'image')
-        self.train_list = osp.join(self.dataset_dir, 'train_test_split/train_list.txt')
+        self.train_list = osp.join(
+            self.dataset_dir, 'train-test-split/train_list.txt')
+        # self.vehicle_info = osp.join(
+        #     self.dataset_dir, 'train_test_split/vehicle_info.txt')
         if test_list:
             self.test_list = test_list
         else:
-            self.test_list = osp.join(self.dataset_dir, 'train_test_split/test_list_13164.txt')
+            self.test_list = osp.join(
+                self.dataset_dir, 'train-test-split/test_3000.txt')
 
         required_files = [
             self.dataset_dir,
@@ -48,7 +59,7 @@ class VehicleID(ImageDataset):
         train = self.process_dir(self.train_list, is_train=True)
         query, gallery = self.process_dir(self.test_list, is_train=False)
 
-        super(VehicleID, self).__init__(train, query, gallery, **kwargs)
+        super(Vehicle1M, self).__init__(train, query, gallery, **kwargs)
 
     def process_dir(self, list_file, is_train=True):
         img_list_lines = open(list_file, 'r').readlines()
@@ -58,14 +69,15 @@ class VehicleID(ImageDataset):
             line = line.strip()
             vid = int(line.split(' ')[1])
             imgid = line.split(' ')[0]
-            img_path = osp.join(self.image_dir, f"{imgid}.jpg")
-            imgid = int(imgid)
+            img_path = osp.join(self.image_dir, imgid)
+            imgid = int(imgid.split('/')[1].split('.')[0])
             if is_train:
                 vid = f"{self.dataset_name}_{vid}"
                 imgid = f"{self.dataset_name}_{imgid}"
             dataset.append((img_path, vid, imgid))
 
-        if is_train: return dataset
+        if is_train:
+            return dataset
         else:
             random.shuffle(dataset)
             vid_container = set()
@@ -82,45 +94,48 @@ class VehicleID(ImageDataset):
 
 
 @DATASET_REGISTRY.register()
-class SmallVehicleID(VehicleID):
+class SmallVehicle1M(Vehicle1M):
     """VehicleID.
     Small test dataset statistics:
-        - identities: 800.
-        - images: 6493.
+        - identities: 1000.
+        - images: 16123.
     """
 
     def __init__(self, root='datasets', **kwargs):
         dataset_dir = osp.join(root, self.dataset_dir)
-        self.test_list = osp.join(dataset_dir, 'train_test_split/test_list_800.txt')
+        self.test_list = osp.join(
+            dataset_dir, 'train-test-split/test_1000.txt')
 
-        super(SmallVehicleID, self).__init__(root, self.test_list, **kwargs)
+        super(SmallVehicle1M, self).__init__(root, self.test_list, **kwargs)
 
 
 @DATASET_REGISTRY.register()
-class MediumVehicleID(VehicleID):
+class MediumVehicle1M(Vehicle1M):
     """VehicleID.
     Medium test dataset statistics:
-        - identities: 1600.
-        - images: 13377.
+        - identities: 2000.
+        - images: 32539.
     """
 
     def __init__(self, root='datasets', **kwargs):
         dataset_dir = osp.join(root, self.dataset_dir)
-        self.test_list = osp.join(dataset_dir, 'train_test_split/test_list_1600.txt')
+        self.test_list = osp.join(
+            dataset_dir, 'train-test-split/test_2000.txt')
 
-        super(MediumVehicleID, self).__init__(root, self.test_list, **kwargs)
+        super(MediumVehicle1M, self).__init__(root, self.test_list, **kwargs)
 
 
 @DATASET_REGISTRY.register()
-class LargeVehicleID(VehicleID):
+class LargeVehicle1M(Vehicle1M):
     """VehicleID.
     Large test dataset statistics:
-        - identities: 2400.
-        - images: 19777.
+        - identities: 3000.
+        - images: 49259.
     """
 
     def __init__(self, root='datasets', **kwargs):
         dataset_dir = osp.join(root, self.dataset_dir)
-        self.test_list = osp.join(dataset_dir, 'train_test_split/test_list_2400.txt')
+        self.test_list = osp.join(
+            dataset_dir, 'train-test-split/test_3000.txt')
 
-        super(LargeVehicleID, self).__init__(root, self.test_list, **kwargs)
+        super(LargeVehicle1M, self).__init__(root, self.test_list, **kwargs)

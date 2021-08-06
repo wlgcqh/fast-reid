@@ -3,37 +3,32 @@
 @author:  xingyu liao
 @contact: sherlockliao01@gmail.com
 """
-
-import logging
+import sys
+sys.path.append('../../')
+from fastreid.config import get_cfg
+from fastreid.utils.logger import setup_logger
+from fastreid.utils.checkpoint import Checkpointer
+from fastreid.utils.file_io import PathManager
+from fastreid.modeling.meta_arch import build_model
+import numpy as np
 import os
 import argparse
 import io
-import time
-import numpy as np
-import sys
-sys.path.append('../../')
-
+import cv2
+import tqdm
 import onnx
 import onnxruntime
 import onnxoptimizer
 import torch
 from onnxsim import simplify
 from torch.onnx import OperatorExportTypes
-
-sys.path.append('.')
-
-from fastreid.config import get_cfg
-from fastreid.modeling.meta_arch import build_model
-from fastreid.utils.file_io import PathManager
-from fastreid.utils.checkpoint import Checkpointer
-from fastreid.utils.logger import setup_logger
+import time
 
 # import some modules added in project like this below
-# sys.path.append("projects/FastDistill")
+# sys.path.append('../../projects/FastDistill')
 # from fastdistill import *
 
-setup_logger(name="fastreid")
-logger = logging.getLogger("fastreid.onnx_export")
+logger = setup_logger(name='onnx_export')
 
 
 def setup_cfg(args):
@@ -45,7 +40,8 @@ def setup_cfg(args):
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description="Convert Pytorch to ONNX model")
+    parser = argparse.ArgumentParser(
+        description="Convert Pytorch to ONNX model")
 
     parser.add_argument(
         "--config-file",
@@ -124,10 +120,11 @@ def export_onnx_model(model, inputs):
                 model,
                 inputs,
                 f,
-                opset_version=9,
-                operator_export_type=OperatorExportTypes.ONNX_ATEN_FALLBACK,
+                opset_version=11,
+                dynamic_axes={**{input_name: {0: 'batchsize'} for input_name in input_names}, **{output_name: {0: 'batchsize'} for output_name in output_names}},
                 input_names=input_names,
                 output_names=output_names,
+                #operator_export_type=OperatorExportTypes.ONNX_ATEN_FALLBACK,
                 verbose=True,  # NOTE: uncomment this for debugging
                 export_params=True
             )
@@ -135,14 +132,27 @@ def export_onnx_model(model, inputs):
 
     logger.info("Completed convert of ONNX model")
 
-    # Apply ONNX's Optimization
-    logger.info("Beginning ONNX model path optimization")
-    all_passes = onnxoptimizer.get_available_passes()
-    passes = ["extract_constant_to_initializer", "eliminate_unused_initializer", "fuse_bn_into_conv"]
-    assert all(p in all_passes for p in passes)
-    onnx_model = onnxoptimizer.optimize(onnx_model, passes)
-    logger.info("Completed ONNX model path optimization")
+    # # Apply ONNX's Optimization
+    # logger.info("Beginning ONNX model path optimization")
+    # all_passes = onnxoptimizer.get_available_passes()
+    # passes = ["extract_constant_to_initializer",
+    #           "eliminate_unused_initializer", "fuse_bn_into_conv"]
+    # assert all(p in all_passes for p in passes)
+    # onnx_model = onnxoptimizer.optimize(onnx_model, passes)
+    # logger.info("Completed ONNX model path optimization")
     return onnx_model
+
+
+def preprocess(image_path, image_height, image_width):
+    original_image = cv2.imread(image_path)
+    # the model expects RGB inputs
+    original_image = original_image[:, :, ::-1]
+
+    # Apply pre-processing to image.
+    img = cv2.resize(original_image, (image_width, image_height),
+                     interpolation=cv2.INTER_CUBIC)
+    img = img.astype("float32").transpose(2, 0, 1)[np.newaxis]  # (1, 3, h, w)
+    return img
 
 
 if __name__ == '__main__':
@@ -155,12 +165,14 @@ if __name__ == '__main__':
         cfg.MODEL.HEADS.POOL_LAYER = 'GlobalAvgPool'
     model = build_model(cfg)
     Checkpointer(model).load(cfg.MODEL.WEIGHTS)
-    if hasattr(model.backbone, 'deploy'):
-        model.backbone.deploy(True)
+    # if hasattr(model.backbone, 'deploy'):
+    #     model.backbone.deploy(True)
     model.eval()
+    model = model.cpu()
     logger.info(model)
 
-    inputs = torch.randn(args.batch_size, 3, cfg.INPUT.SIZE_TEST[0], cfg.INPUT.SIZE_TEST[1]).to(model.device)
+    inputs = torch.randn(args.batch_size, 3,
+                         cfg.INPUT.SIZE_TEST[0], cfg.INPUT.SIZE_TEST[1], device='cpu')
     onnx_model = export_onnx_model(model, inputs)
 
     #model_simp, check = simplify(onnx_model)
@@ -182,15 +194,16 @@ if __name__ == '__main__':
     for i in range(10):
         for path in glob.glob("test_data/*.jpg"):
             #print(path)
-            #image = preprocess(path, 256, 256)
-            image = np.random.randn(8,3,256,256).astype("float32")
+            image = preprocess(path, 256, 256)
+            #image = np.random.randn(64,3,256,256).astype("float32")
             start = time.time()
             onnx_result = ort_sess.run(None, {input_name: image})[0]
             end = time.time()
             print(end - start)
             # feat = normalize(feat, axis=1)
             image_tensor = torch.from_numpy(image)
-            pytorch_result = model(image_tensor).detach().numpy()
+            with torch.no_grad():
+                pytorch_result = model(image_tensor).numpy()
             #print(onnx_result.shape, pytorch_result.shape)
             #print(onnx_result, pytorch_result)
             np.testing.assert_allclose(
