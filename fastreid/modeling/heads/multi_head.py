@@ -157,10 +157,10 @@ class MultiHead(nn.Module):
         self.pool_layer = getattr(pooling, pool_type)()
 
         self.neck_feat = neck_feat
-        self.MultiHeads = MultiHeads(feature_dim=2048,
+        self.MultiHeads = MultiHeads(feat_dim,
                                      groups=32,
                                      mode='S',
-                                     backbone_fc_dim=2048)
+                                     backbone_fc_dim = feat_dim)
 
         neck = []
         if embedding_dim > 0:
@@ -171,7 +171,7 @@ class MultiHead(nn.Module):
                 neck.append(m)
             else:
                 neck.append(
-                    nn.Conv2d(feat_dim, embedding_dim, 1, 1, bias=False))
+                    nn.Linear(feat_dim, embedding_dim, bias=False))
                 #neck.append(Reshape(feat_dim))
                 #neck.append(nn.Linear(feat_dim, embedding_dim, bias=False))
                 #neck.append(Reshape(embedding_dim, 1, 1))
