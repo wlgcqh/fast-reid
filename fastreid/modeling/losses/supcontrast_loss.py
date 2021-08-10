@@ -15,8 +15,7 @@ def supcontrast_loss(features,
                      contrast_mode='all',
                      base_temperature=0.07):
     # susu
-    #features = F.normalize(features, dim=1, p=2)
-    print(features)
+    features = F.normalize(features, dim=1, p=2)
     features = features.view(num_ids, views, -1)
     labels = labels.view(num_ids, views)[:, 0]
 
@@ -56,12 +55,9 @@ def supcontrast_loss(features,
     # compute logits
     anchor_dot_contrast = torch.div(
         torch.matmul(anchor_feature, contrast_feature.T), temperature)
-    print(anchor_dot_contrast)
     # for numerical stability
     logits_max, _ = torch.max(anchor_dot_contrast, dim=1, keepdim=True)
-    print(logits_max)
     logits = anchor_dot_contrast - logits_max.detach()
-    print(logits)
 
     # tile mask
     mask = mask.repeat(anchor_count, contrast_count)
@@ -77,10 +73,8 @@ def supcontrast_loss(features,
 
     # compute mean of log-likelihood over positive
     mean_log_prob_pos = (mask * log_prob).sum(1) / mask.sum(1)
-    print(mean_log_prob_pos)
     # loss
     loss = -(temperature / base_temperature) * mean_log_prob_pos
-    print(loss)
     loss = loss.view(anchor_count, batch_size).mean()
 
     return loss
