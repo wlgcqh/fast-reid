@@ -17,17 +17,10 @@ DATASETS:
   TESTS: ("HangzhouPlate","VeRi","LargeVehicleID", "LargeVeRiWild",)
 
 SOLVER:
-<<<<<<< HEAD
   IMS_PER_BATCH: 512 # 512 For 4 GPUs
   MAX_EPOCH: 60
   STEPS: [15, 35, 45]
   WARMUP_ITERS: 3000
-=======
-  IMS_PER_BATCH: 1024 # 1024 For 8 GPUs
-  MAX_EPOCH: 120
-  STEPS: [30, 70, 90]
-  WARMUP_ITERS: 5000
->>>>>>> 24fc9680d8509fd63a98d18de0673aff69d9617a
 
   CHECKPOINT_PERIOD: 10
 
@@ -35,8 +28,4 @@ TEST:
   EVAL_PERIOD: 10
   IMS_PER_BATCH: 128
 
-<<<<<<< HEAD
-OUTPUT_DIR: logs/hangzhou_plate/bagtricks_R50_feat256_8gpu_0722
-=======
-OUTPUT_DIR: logs/hangzhou_plate/bagtricks_R50_feat256_8gpu
->>>>>>> 24fc9680d8509fd63a98d18de0673aff69d9617a
+OUTPUT_DIR: logs/hangzhou_plate/bagtricks_R50_feat256_4gpu_0806

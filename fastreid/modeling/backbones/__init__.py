@@ -15,3 +15,5 @@ from .shufflenet import build_shufflenetv2_backbone
 from .mobilenet import build_mobilenetv2_backbone
 from .repvgg import build_repvgg_backbone
 from .vision_transformer import build_vit_backbone
+from .nfnet import build_nfnet_backbone
+from .resnet_mixstyle import build_resnet_mixstyle_backbone
