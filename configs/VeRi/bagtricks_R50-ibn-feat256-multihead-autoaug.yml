@@ -1,0 +1,65 @@
+_BASE_: ../Base-bagtricks.yml
+
+INPUT:
+  SIZE_TRAIN: [256, 256]
+  SIZE_TEST: [256, 256]
+
+MODEL:
+  BACKBONE:
+    WITH_IBN: True
+  HEADS:
+    NAME: MultiHead
+    EMBEDDING_DIM: 256
+    #NECK_FEAT: after
+    POOL_LAYER: GeneralizedMeanPoolingP
+    #CLS_LAYER: CircleSoftmax
+    #SCALE: 64
+    #MARGIN: 0.35
+  LOSSES:
+    NAME: ("CrossEntropyLoss", "TripletLoss",)
+    CE:
+      EPSILON: 0.1
+      SCALE: 1.0
+
+    TRI:
+      MARGIN: 0.0
+      HARD_MINING: True
+      NORM_FEAT: False
+      SCALE: 1.0
+
+
+
+SOLVER:
+  AMP:
+    ENABLED: True
+  OPT: Adam
+  MAX_EPOCH: 60
+  BASE_LR: 0.00035
+  WEIGHT_DECAY: 0.0005
+  IMS_PER_BATCH: 64
+
+  SCHED: CosineAnnealingLR
+  DELAY_EPOCHS: 30
+  ETA_MIN_LR: 0.0000007
+
+  WARMUP_FACTOR: 0.1
+  WARMUP_ITERS: 2000
+
+  FREEZE_ITERS: 1000
+
+  CHECKPOINT_PERIOD: 20
+
+
+DATASETS:
+  NAMES: ("VeRi",)
+  TESTS: ("VeRi",)
+
+DATALOADER:
+  NUM_INSTANCE: 16
+  SAMPLER_TRAIN: BalancedIdentitySampler
+
+TEST:
+  EVAL_PERIOD: 10
+  IMS_PER_BATCH: 256
+
+OUTPUT_DIR: logs/veri/bagtricks_R50-ibn-feat256-multihead-autoaug
