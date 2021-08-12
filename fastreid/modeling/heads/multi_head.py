@@ -60,7 +60,7 @@ class FC(nn.Module):
     def __init__(self, inplanes, outplanes):
         super(FC, self).__init__()
         self.fc = nn.Linear(inplanes, outplanes)
-        self.bn = nn.BatchNorm1d(outplanes)
+        #self.bn = nn.BatchNorm1d(outplanes)
         self.act = nn.PReLU()
 
     def forward(self, x):
@@ -160,7 +160,7 @@ class MultiHead(nn.Module):
         self.MultiHeads = MultiHeads(feat_dim,
                                      groups=32,
                                      mode='S',
-                                     backbone_fc_dim = feat_dim)
+                                     backbone_fc_dim=feat_dim)
 
         neck = []
         if embedding_dim > 0:
@@ -170,8 +170,7 @@ class MultiHead(nn.Module):
                 nn.init.constant_(m.bias, 0)
                 neck.append(m)
             else:
-                neck.append(
-                    nn.Linear(feat_dim, embedding_dim, bias=False))
+                neck.append(nn.Linear(feat_dim, embedding_dim, bias=False))
                 #neck.append(Reshape(feat_dim))
                 #neck.append(nn.Linear(feat_dim, embedding_dim, bias=False))
                 #neck.append(Reshape(embedding_dim, 1, 1))
@@ -192,8 +191,6 @@ class MultiHead(nn.Module):
         self.weight = nn.Parameter(torch.Tensor(num_classes, feat_dim))
         self.cls_layer = getattr(any_softmax, cls_type)(num_classes, scale,
                                                         margin)
-        self.reduce = nn.Sequential(
-            nn.Conv2d(3072, 2048, kernel_size=1, bias=False))
 
         self.reset_parameters()
 
