@@ -1,0 +1,51 @@
+_BASE_: ../Base-bagtricks.yml
+
+INPUT:
+  SIZE_TRAIN: [256, 256]
+  SIZE_TEST: [256, 256]
+
+MODEL:
+  FREEZE_LAYERS: [ backbone ]
+  META_ARCHITECTURE: MALW_Baseline
+  BACKBONE:
+    WITH_IBN: True
+  HEADS:
+    EMBEDDING_DIM: 256
+    POOL_LAYER: GeneralizedMeanPoolingP
+  LOSSES:
+    NAME: ("CrossEntropyLoss", "TripletLoss",)
+    CE:
+      EPSILON: 0.0
+      SCALE: 1.0
+
+    TRI:
+      MARGIN: 0.0
+      HARD_MINING: True
+      NORM_FEAT: False
+      SCALE: 1.0
+
+SOLVER:
+  OPT: SGD
+  BASE_LR: 0.01
+  ETA_MIN_LR: 7.7e-5
+
+  IMS_PER_BATCH: 512
+  MAX_EPOCH: 60
+  WARMUP_ITERS: 3000
+  FREEZE_ITERS: 1000
+
+  CHECKPOINT_PERIOD: 10
+
+DATASETS:
+  NAMES: ("VeRiWild",)
+  TESTS: ("VeRi", "SmallVeRiWild", "MediumVeRiWild", "LargeVeRiWild",)
+
+DATALOADER:
+  NUM_INSTANCE: 16
+  SAMPLER_TRAIN: BalancedIdentitySampler
+
+TEST:
+  EVAL_PERIOD: 10
+  IMS_PER_BATCH: 256
+
+OUTPUT_DIR: logs/veriwild/bagtricks_R50-ibn-feat256-malw
