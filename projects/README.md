@@ -14,10 +14,13 @@ Note that these are research projects, and therefore may not have the same level
 - [Attribute Recognition](https://github.com/JDAI-CV/fast-reid/tree/master/projects/FastAttr)
 - [Hyper-Parameters Optimization](https://github.com/JDAI-CV/fast-reid/tree/master/projects/FastTune)
 - [Overhaul Distillation](https://github.com/JDAI-CV/fast-reid/tree/master/projects/FastDistill)
+- Semi-Supervised Domain Generalizable Person Re-Identification. [code](https://github.com/xiaomingzhid/sskd) and [paper](https://arxiv.org/pdf/2108.05045.pdf)
 
 # External Projects
 
 External projects in the community that use fastreid:
+
+- [FastReID of Interpreter Project](https://github.com/SheldongChen/AMD.github.io)
 
 # Competitions
 

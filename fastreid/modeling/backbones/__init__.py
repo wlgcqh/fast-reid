@@ -13,6 +13,7 @@ from .resnext import build_resnext_backbone
 from .regnet import build_regnet_backbone, build_effnet_backbone
 from .shufflenet import build_shufflenetv2_backbone
 from .mobilenet import build_mobilenetv2_backbone
+from .mobilenetv3 import build_mobilenetv3_backbone
 from .repvgg import build_repvgg_backbone
 from .vision_transformer import build_vit_backbone
 from .nfnet import build_nfnet_backbone
