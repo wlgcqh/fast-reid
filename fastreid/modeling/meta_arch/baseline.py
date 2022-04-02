@@ -112,7 +112,6 @@ class Baseline(nn.Module):
             # may be larger than that in the original dataset, so the circle/arcface will
             # throw an error. We just set all the targets to 0 to avoid this problem.
             if targets.sum() < 0: targets.zero_()
-
             outputs = self.heads(features, targets)
             losses = self.losses(outputs, targets)
             return losses
@@ -133,6 +132,8 @@ class Baseline(nn.Module):
                 "batched_inputs must be dict or torch.Tensor, but get {}".
                 format(type(batched_inputs)))
 
+        self.pixel_mean = self.pixel_mean.to(images.device)
+        self.pixel_std = self.pixel_std.to(images.device)
         images.sub_(self.pixel_mean).div_(self.pixel_std)
         return images
 

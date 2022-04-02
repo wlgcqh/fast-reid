@@ -29,11 +29,11 @@ SOLVER:
 #  SAMPLER_TRAIN: TrainingSampler
 
 DATASETS:
-  NAMES: ("VeRi",)
+  NAMES: ("VeRi", "VeRiX", )
   TESTS: ("VeRi",)
 
 TEST:
-  EVAL_PERIOD: 1
+  EVAL_PERIOD: 10
   IMS_PER_BATCH: 256
 
-OUTPUT_DIR: logs/veri/bagtricks_R50-feat256
+OUTPUT_DIR: logs/veri/bagtricks_R50-feat256-verix

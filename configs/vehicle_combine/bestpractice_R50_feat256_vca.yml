@@ -5,9 +5,9 @@ INPUT:
   SIZE_TEST: [256, 256]
 
 MODEL:
-  FREEZE_LAYERS: [ backbone ]
-  META_ARCHITECTURE: MALW_Baseline
+  #META_ARCHITECTURE: MALW_Baseline
   BACKBONE:
+    #NAME: build_resnet_mixstyle_backbone
     WITH_IBN: True
   HEADS:
     EMBEDDING_DIM: 256
@@ -24,34 +24,20 @@ MODEL:
       NORM_FEAT: False
       SCALE: 1.0
 
+DATASETS:
+  NAMES: ("VeRi", "VehicleID", "VeRiWild", "VCA")
+  TESTS: ("VeRi",  "LargeVehicleID", "LargeVeRiWild", "VCA")
+
 SOLVER:
   IMS_PER_BATCH: 512 # 512 For 4 GPUs
   MAX_EPOCH: 120
   STEPS: [30, 70, 90]
   WARMUP_ITERS: 5000
 
-  CHECKPOINT_PERIOD: 20
-#  OPT: SGD
-#  BASE_LR: 0.01
-#  ETA_MIN_LR: 7.7e-5
-
-#  IMS_PER_BATCH: 512
-#  MAX_EPOCH: 60
-#  WARMUP_ITERS: 3000
-#  FREEZE_ITERS: 1000
-
-#  CHECKPOINT_PERIOD: 10
-
-DATASETS:
-  NAMES: ("VeRiWild",)
-  TESTS: ("VeRi", "SmallVeRiWild", "MediumVeRiWild", "LargeVeRiWild",)
-
-#DATALOADER:
-#  NUM_INSTANCE: 16
-#  SAMPLER_TRAIN: BalancedIdentitySampler
+  CHECKPOINT_PERIOD: 10
 
 TEST:
   EVAL_PERIOD: 10
   IMS_PER_BATCH: 256
 
-OUTPUT_DIR: logs/veriwild/bagtricks_R50-ibn-feat256-malw
+OUTPUT_DIR: logs/vehicle_combine/bestpractice_R50_feat256_4gpu_combine_vca

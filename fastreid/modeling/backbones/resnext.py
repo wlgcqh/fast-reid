@@ -44,6 +44,7 @@ class Bottleneck(nn.Module):
 
         D = int(math.floor(planes * (baseWidth / 64)))
         C = cardinality
+        print(baseWidth, cardinality)
         self.conv1 = nn.Conv2d(inplanes, D * C, kernel_size=1, stride=1, padding=0, bias=False)
         if with_ibn:
             self.bn1 = IBN(D * C, bn_norm)

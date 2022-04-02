@@ -36,4 +36,4 @@ TEST:
   EVAL_PERIOD: 1
   IMS_PER_BATCH: 256
 
-OUTPUT_DIR: logs/veri/bagtricks_R50-feat256
+OUTPUT_DIR: logs/veri/bagtricks_R50-feat256-multifc

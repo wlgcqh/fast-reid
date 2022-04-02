@@ -20,7 +20,8 @@ def print_csv_format(results):
     assert isinstance(results, OrderedDict) or not len(results), results
     logger = logging.getLogger(__name__)
 
-    dataset_name = results.pop('dataset')
+    results.pop('dataset')
+    dataset_name = 'test'
     metrics = ["Dataset"] + [k for k in results]
     csv_results = [(dataset_name, *list(results.values()))]
 
@@ -33,7 +34,8 @@ def print_csv_format(results):
         numalign="left",
     )
 
-    logger.info("Evaluation results in csv format: \n" + colored(table, "cyan"))
+    logger.info("Evaluation results in csv format: \n" +
+                colored(table, "cyan"))
 
 
 def verify_results(cfg, results):

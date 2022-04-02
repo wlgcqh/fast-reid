@@ -72,6 +72,7 @@ class EmbeddingHead(nn.Module):
                 neck.append(m)
             else:
                 neck.append(nn.Conv2d(feat_dim, embedding_dim, 1, 1, bias=False))
+                #neck.append(get_norm(norm_type, 512, bias_freeze=True))
                 #neck.append(Reshape(feat_dim))
                 #neck.append(nn.Linear(feat_dim, embedding_dim, bias=False))
                 #neck.append(Reshape(embedding_dim, 1, 1))
@@ -86,15 +87,17 @@ class EmbeddingHead(nn.Module):
         # Classification head
         assert hasattr(any_softmax, cls_type), "Expected cls types are {}, " \
                                                "but got {}".format(any_softmax.__all__, cls_type)
-        self.weight = nn.Parameter(torch.Tensor(num_classes, feat_dim))
-        self.cls_layer = getattr(any_softmax, cls_type)(num_classes, scale,
-                                                        margin)
+        #self.weight = nn.Parameter(torch.Tensor(num_classes, feat_dim))
+        #self.cls_layer = getattr(any_softmax, cls_type)(num_classes, scale,
+        #   margin)
+        self.cls_layer = nn.Linear(feat_dim, num_classes, bias=False)
 
         self.reset_parameters()
 
     def reset_parameters(self) -> None:
         self.bottleneck.apply(weights_init_kaiming)
-        nn.init.normal_(self.weight, std=0.01)
+        self.cls_layer.apply(weights_init_kaiming)
+        #nn.init.normal_(self.weight, std=0.01)
 
     @classmethod
     def from_config(cls, cfg):
@@ -137,13 +140,13 @@ class EmbeddingHead(nn.Module):
         # fmt: on
 
         # Training
-        if self.cls_layer.__class__.__name__ == 'Linear':
-            logits = F.linear(neck_feat, self.weight)
-        else:
-            logits = F.linear(F.normalize(neck_feat), F.normalize(self.weight))
+        #if self.cls_layer.__class__.__name__ == 'Linear':
+        #    logits = F.linear(neck_feat, self.weight)
+        #else:
+        #    logits = F.linear(F.normalize(neck_feat), F.normalize(self.weight))
 
         # Pass logits.clone() into cls_layer, because there is in-place operations
-        cls_outputs = self.cls_layer(logits.clone(), targets)
+        cls_outputs = self.cls_layer(neck_feat)
 
         # fmt: off
         if self.neck_feat == 'before': feat = pool_feat[..., 0, 0]
@@ -152,9 +155,8 @@ class EmbeddingHead(nn.Module):
             raise KeyError(
                 f"{self.neck_feat} is invalid for MODEL.HEADS.NECK_FEAT")
         # fmt: on
-
         return {
             "cls_outputs": cls_outputs,
-            "pred_class_logits": logits.mul(self.cls_layer.s),
+            "pred_class_logits": cls_outputs,
             "features": feat,
         }

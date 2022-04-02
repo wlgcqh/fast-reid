@@ -6,8 +6,8 @@ INPUT:
 
 MODEL:
   FREEZE_LAYERS: [ backbone ]
-  META_ARCHITECTURE: MALW_Baseline
   BACKBONE:
+    NAME: build_resnet_mixstyle_backbone
     WITH_IBN: True
   HEADS:
     EMBEDDING_DIM: 256
@@ -31,27 +31,13 @@ SOLVER:
   WARMUP_ITERS: 5000
 
   CHECKPOINT_PERIOD: 20
-#  OPT: SGD
-#  BASE_LR: 0.01
-#  ETA_MIN_LR: 7.7e-5
-
-#  IMS_PER_BATCH: 512
-#  MAX_EPOCH: 60
-#  WARMUP_ITERS: 3000
-#  FREEZE_ITERS: 1000
-
-#  CHECKPOINT_PERIOD: 10
 
 DATASETS:
-  NAMES: ("VeRiWild",)
-  TESTS: ("VeRi", "SmallVeRiWild", "MediumVeRiWild", "LargeVeRiWild",)
-
-#DATALOADER:
-#  NUM_INSTANCE: 16
-#  SAMPLER_TRAIN: BalancedIdentitySampler
+  NAMES: ("VeRi", "VehicleID", "VeRiWild",)
+  TESTS: ("VeRi", "SmallVehicleID", "MediumVehicleID", "LargeVehicleID", "SmallVeRiWild", "MediumVeRiWild", "LargeVeRiWild",)
 
 TEST:
   EVAL_PERIOD: 10
   IMS_PER_BATCH: 256
 
-OUTPUT_DIR: logs/veriwild/bagtricks_R50-ibn-feat256-malw
+OUTPUT_DIR: logs/vehicle_combine/bagtricks_R50-ibn-feat256-mixstyle

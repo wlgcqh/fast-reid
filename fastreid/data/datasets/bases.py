@@ -28,10 +28,18 @@ class Dataset(object):
             dataset for training.
         verbose (bool): show information.
     """
-    _junk_pids = []  # contains useless person IDs, e.g. background, false detections
+    _junk_pids = [
+    ]  # contains useless person IDs, e.g. background, false detections
 
-    def __init__(self, train, query, gallery, transform=None, mode='train',
-                 combineall=False, verbose=True, **kwargs):
+    def __init__(self,
+                 train,
+                 query,
+                 gallery,
+                 transform=None,
+                 mode='train',
+                 combineall=False,
+                 verbose=True,
+                 **kwargs):
         self._train = train
         self._query = query
         self._gallery = gallery
@@ -51,7 +59,8 @@ class Dataset(object):
             self.data = self.gallery
         else:
             raise ValueError('Invalid mode. Got {}, but expected to be '
-                             'one of [train | query | gallery]'.format(self.mode))
+                             'one of [train | query | gallery]'.format(
+                                 self.mode))
 
     @property
     def train(self):
@@ -117,8 +126,10 @@ class Dataset(object):
             for img_path, pid, camid in data:
                 if pid in self._junk_pids:
                     continue
-                pid = getattr(self, "dataset_name", "Unknown") + "_test_" + str(pid)
-                camid = getattr(self, "dataset_name", "Unknown") + "_test_" + str(camid)
+                pid = getattr(self, "dataset_name",
+                              "Unknown") + "_test_" + str(pid)
+                camid = getattr(self, "dataset_name",
+                                "Unknown") + "_test_" + str(camid)
                 combined.append((img_path, pid, camid))
 
         _combine_data(self.query)
@@ -147,12 +158,14 @@ class ImageDataset(Dataset):
     where ``img`` has shape (channel, height, width). As a result,
     data in each batch has shape (batch_size, channel, height, width).
     """
-
     def show_train(self):
         num_train_pids, num_train_cams = self.parse_data(self.train)
 
         headers = ['subset', '# ids', '# images', '# cameras']
-        csv_results = [['train', num_train_pids, len(self.train), num_train_cams]]
+        csv_results = [[
+            'train', num_train_pids,
+            len(self.train), num_train_cams
+        ]]
 
         # tabulate it
         table = tabulate(
@@ -161,7 +174,9 @@ class ImageDataset(Dataset):
             headers=headers,
             numalign="left",
         )
-        logger.info(f"=> Loaded {self.__class__.__name__} in csv format: \n" + colored(table, "cyan"))
+        # logger.info(f"=> Loaded {self.__class__.__name__} in csv format: \n" + colored(table, "cyan"))
+        logger.info(f"=> Loaded  test dataset in csv format: \n" +
+                    colored(table, "cyan"))
 
     def show_test(self):
         num_query_pids, num_query_cams = self.parse_data(self.query)
@@ -169,8 +184,10 @@ class ImageDataset(Dataset):
 
         headers = ['subset', '# ids', '# images', '# cameras']
         csv_results = [
-            ['query', num_query_pids, len(self.query), num_query_cams],
-            ['gallery', num_gallery_pids, len(self.gallery), num_gallery_cams],
+            ['query', num_query_pids,
+             len(self.query), num_query_cams],
+            ['gallery', num_gallery_pids,
+             len(self.gallery), num_gallery_cams],
         ]
 
         # tabulate it
@@ -180,4 +197,7 @@ class ImageDataset(Dataset):
             headers=headers,
             numalign="left",
         )
-        logger.info(f"=> Loaded {self.__class__.__name__} in csv format: \n" + colored(table, "cyan"))
+        # logger.info(f"=> Loaded {self.__class__.__name__} in csv format: \n" +
+        # colored(table, "cyan"))
+        logger.info(f"=> Loaded  test dataset in csv format: \n" +
+                    colored(table, "cyan"))

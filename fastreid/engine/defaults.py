@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
-
 """
 This file contains components with some default boilerplate logic user may need
 in training / testing. They will not work for everyone, but many users may find them useful.
@@ -18,8 +17,8 @@ import torch
 from torch.nn.parallel import DistributedDataParallel
 
 from fastreid.data import build_reid_test_loader, build_reid_train_loader
-from fastreid.evaluation import (ReidEvaluator,
-                                 inference_on_dataset, print_csv_format)
+from fastreid.evaluation import (ReidEvaluator, inference_on_dataset,
+                                 print_csv_format)
 from fastreid.modeling.meta_arch import build_model
 from fastreid.solver import build_lr_scheduler, build_optimizer
 from fastreid.utils import comm
@@ -32,7 +31,10 @@ from fastreid.utils.logger import setup_logger
 from . import hooks
 from .train_loop import TrainerBase, AMPTrainer, SimpleTrainer
 
-__all__ = ["default_argument_parser", "default_setup", "DefaultPredictor", "DefaultTrainer"]
+__all__ = [
+    "default_argument_parser", "default_setup", "DefaultPredictor",
+    "DefaultTrainer"
+]
 
 
 def default_argument_parser():
@@ -42,24 +44,38 @@ def default_argument_parser():
         argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(description="fastreid Training")
-    parser.add_argument("--config-file", default="", metavar="FILE", help="path to config file")
+    parser.add_argument("--config-file",
+                        default="",
+                        metavar="FILE",
+                        help="path to config file")
     parser.add_argument(
         "--resume",
         action="store_true",
         help="whether to attempt to resume from the checkpoint directory",
     )
-    parser.add_argument("--eval-only", action="store_true", help="perform evaluation only")
-    parser.add_argument("--num-gpus", type=int, default=1, help="number of gpus *per machine*")
-    parser.add_argument("--num-machines", type=int, default=1, help="total number of machines")
-    parser.add_argument(
-        "--machine-rank", type=int, default=0, help="the rank of this machine (unique per machine)"
-    )
+    parser.add_argument("--eval-only",
+                        action="store_true",
+                        help="perform evaluation only")
+    parser.add_argument("--num-gpus",
+                        type=int,
+                        default=1,
+                        help="number of gpus *per machine*")
+    parser.add_argument("--num-machines",
+                        type=int,
+                        default=1,
+                        help="total number of machines")
+    parser.add_argument("--machine-rank",
+                        type=int,
+                        default=0,
+                        help="the rank of this machine (unique per machine)")
 
     # PyTorch still may leave orphan processes in multi-gpu training.
     # Therefore we use a deterministic way to obtain port,
     # so that users are aware of orphan processes by seeing the port occupied.
-    port = 2 ** 15 + 2 ** 14 + hash(os.getuid() if sys.platform != "win32" else 1) % 2 ** 14
-    parser.add_argument("--dist-url", default="tcp://127.0.0.1:{}".format(port))
+    port = 2**15 + 2**14 + hash(
+        os.getuid() if sys.platform != "win32" else 1) % 2**14
+    parser.add_argument("--dist-url",
+                        default="tcp://127.0.0.1:{}".format(port))
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
@@ -87,16 +103,15 @@ def default_setup(cfg, args):
     # setup_logger(output_dir, distributed_rank=rank, name="fvcore")
     logger = setup_logger(output_dir, distributed_rank=rank)
 
-    logger.info("Rank of current process: {}. World size: {}".format(rank, comm.get_world_size()))
+    logger.info("Rank of current process: {}. World size: {}".format(
+        rank, comm.get_world_size()))
     logger.info("Environment info:\n" + collect_env_info())
 
     logger.info("Command line arguments: " + str(args))
     if hasattr(args, "config_file") and args.config_file != "":
-        logger.info(
-            "Contents of args.config_file={}:\n{}".format(
-                args.config_file, PathManager.open(args.config_file, "r").read()
-            )
-        )
+        logger.info("Contents of args.config_file={}:\n{}".format(
+            args.config_file,
+            PathManager.open(args.config_file, "r").read()))
 
     logger.info("Running with full config:\n{}".format(cfg))
     if comm.is_main_process() and output_dir:
@@ -131,7 +146,6 @@ class DefaultPredictor:
         inputs = cv2.imread("input.jpg")
         outputs = pred(inputs)
     """
-
     def __init__(self, cfg):
         self.cfg = cfg.clone()  # cfg can be modified by model
         self.cfg.defrost()
@@ -149,7 +163,8 @@ class DefaultPredictor:
             predictions (torch.tensor): the output features of the model
         """
         inputs = {"images": image.to(self.model.device)}
-        with torch.no_grad():  # https://github.com/sphinx-doc/sphinx/issues/4258
+        with torch.no_grad(
+        ):  # https://github.com/sphinx-doc/sphinx/issues/4258
             predictions = self.model(inputs)
         return predictions.cpu()
 
@@ -186,7 +201,6 @@ class DefaultTrainer(TrainerBase):
         trainer.resume_or_load()  # load last checkpoint or MODEL.WEIGHTS
         trainer.train()
     """
-
     def __init__(self, cfg):
         """
         Args:
@@ -194,7 +208,8 @@ class DefaultTrainer(TrainerBase):
         """
         super().__init__()
         logger = logging.getLogger("fastreid")
-        if not logger.isEnabledFor(logging.INFO):  # setup_logger is not called for fastreid
+        if not logger.isEnabledFor(
+                logging.INFO):  # setup_logger is not called for fastreid
             setup_logger()
 
         # Assume these objects must be constructed in this order.
@@ -208,15 +223,19 @@ class DefaultTrainer(TrainerBase):
             # ref to https://github.com/pytorch/pytorch/issues/22049 to set `find_unused_parameters=True`
             # for part of the parameters is not updated.
             model = DistributedDataParallel(
-                model, device_ids=[comm.get_local_rank()], broadcast_buffers=False,
+                model,
+                device_ids=[comm.get_local_rank()],
+                broadcast_buffers=False,
             )
 
-        self._trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else SimpleTrainer)(
-            model, data_loader, optimizer, param_wrapper
-        )
+        self._trainer = (AMPTrainer if cfg.SOLVER.AMP.ENABLED else
+                         SimpleTrainer)(model, data_loader, optimizer,
+                                        param_wrapper)
 
-        self.iters_per_epoch = len(data_loader.dataset) // cfg.SOLVER.IMS_PER_BATCH
-        self.scheduler = self.build_lr_scheduler(cfg, optimizer, self.iters_per_epoch)
+        self.iters_per_epoch = len(
+            data_loader.dataset) // cfg.SOLVER.IMS_PER_BATCH
+        self.scheduler = self.build_lr_scheduler(cfg, optimizer,
+                                                 self.iters_per_epoch)
 
         # Assume no other objects need to be checkpointed.
         # We can later make it checkpoint the stateful hooks
@@ -252,7 +271,8 @@ class DefaultTrainer(TrainerBase):
         """
         # The checkpoint stores the training iteration that just finished, thus we start
         # at the next iteration (or iter zero if there's no checkpoint).
-        checkpoint = self.checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS, resume=resume)
+        checkpoint = self.checkpointer.resume_or_load(self.cfg.MODEL.WEIGHTS,
+                                                      resume=resume)
 
         if resume and self.checkpointer.has_checkpoint():
             self.start_epoch = checkpoint.get("epoch", -1) + 1
@@ -270,7 +290,8 @@ class DefaultTrainer(TrainerBase):
         cfg = self.cfg.clone()
         cfg.defrost()
         cfg.DATALOADER.NUM_WORKERS = 0  # save some memory and time for PreciseBN
-        cfg.DATASETS.NAMES = tuple([cfg.TEST.PRECISE_BN.DATASET])  # set dataset name for PreciseBN
+        cfg.DATASETS.NAMES = tuple([cfg.TEST.PRECISE_BN.DATASET
+                                    ])  # set dataset name for PreciseBN
 
         ret = [
             hooks.IterationTimer(),
@@ -279,20 +300,22 @@ class DefaultTrainer(TrainerBase):
 
         if cfg.TEST.PRECISE_BN.ENABLED and hooks.get_bn_modules(self.model):
             logger.info("Prepare precise BN dataset")
-            ret.append(hooks.PreciseBN(
-                # Run at the same freq as (but before) evaluation.
-                self.model,
-                # Build a new data loader to not affect training
-                self.build_train_loader(cfg),
-                cfg.TEST.PRECISE_BN.NUM_ITER,
-            ))
+            ret.append(
+                hooks.PreciseBN(
+                    # Run at the same freq as (but before) evaluation.
+                    self.model,
+                    # Build a new data loader to not affect training
+                    self.build_train_loader(cfg),
+                    cfg.TEST.PRECISE_BN.NUM_ITER,
+                ))
 
         if len(cfg.MODEL.FREEZE_LAYERS) > 0 and cfg.SOLVER.FREEZE_ITERS > 0:
-            ret.append(hooks.LayerFreeze(
-                self.model,
-                cfg.MODEL.FREEZE_LAYERS,
-                cfg.SOLVER.FREEZE_ITERS,
-            ))
+            ret.append(
+                hooks.LayerFreeze(
+                    self.model,
+                    cfg.MODEL.FREEZE_LAYERS,
+                    cfg.SOLVER.FREEZE_ITERS,
+                ))
 
         # Do PreciseBN before checkpointer, because it updates the model and need to
         # be saved by checkpointer.
@@ -308,9 +331,11 @@ class DefaultTrainer(TrainerBase):
         ret.append(hooks.EvalHook(cfg.TEST.EVAL_PERIOD, test_and_save_results))
 
         if comm.is_main_process():
-            ret.append(hooks.PeriodicCheckpointer(self.checkpointer, cfg.SOLVER.CHECKPOINT_PERIOD))
+            ret.append(
+                hooks.PeriodicCheckpointer(self.checkpointer,
+                                           cfg.SOLVER.CHECKPOINT_PERIOD))
             # run writers in the end, so that evaluation metrics are written
-            ret.append(hooks.PeriodicWriter(self.build_writers(), 200))
+            ret.append(hooks.PeriodicWriter(self.build_writers(), 50))
 
         return ret
 
@@ -347,9 +372,8 @@ class DefaultTrainer(TrainerBase):
         """
         super().train(self.start_epoch, self.max_epoch, self.iters_per_epoch)
         if comm.is_main_process():
-            assert hasattr(
-                self, "_last_eval_results"
-            ), "No evaluation results obtained during training!"
+            assert hasattr(self, "_last_eval_results"
+                           ), "No evaluation results obtained during training!"
             return self._last_eval_results
 
     def run_step(self):
@@ -436,16 +460,20 @@ class DefaultTrainer(TrainerBase):
                 )
                 results[dataset_name] = {}
                 continue
-            results_i = inference_on_dataset(model, data_loader, evaluator, flip_test=cfg.TEST.FLIP.ENABLED)
+            results_i = inference_on_dataset(model,
+                                             data_loader,
+                                             evaluator,
+                                             flip_test=cfg.TEST.FLIP.ENABLED)
             results[dataset_name] = results_i
 
             if comm.is_main_process():
                 assert isinstance(
                     results, dict
                 ), "Evaluator must return a dict on the main process. Got {} instead.".format(
-                    results
-                )
-                logger.info("Evaluation results for {} in csv format:".format(dataset_name))
+                    results)
+                # logger.info("Evaluation results for {} in csv format:".format(dataset_name))
+                logger.info(
+                    "Evaluation results for test dataset in csv format:")
                 results_i['dataset'] = dataset_name
                 print_csv_format(results_i)
 
@@ -470,7 +498,8 @@ class DefaultTrainer(TrainerBase):
             output_dir = cfg.OUTPUT_DIR
             cfg.MODEL.HEADS.NUM_CLASSES = num_classes
             logger = logging.getLogger(__name__)
-            logger.info(f"Auto-scaling the num_classes={cfg.MODEL.HEADS.NUM_CLASSES}")
+            logger.info(
+                f"Auto-scaling the num_classes={cfg.MODEL.HEADS.NUM_CLASSES}")
 
             # Update the saved config file to make the number of classes valid
             if comm.is_main_process() and output_dir:
@@ -487,4 +516,5 @@ class DefaultTrainer(TrainerBase):
 
 # Access basic attributes from the underlying trainer
 for _attr in ["model", "data_loader", "optimizer", "grad_scaler"]:
-    setattr(DefaultTrainer, _attr, property(lambda self, x=_attr: getattr(self._trainer, x, None)))
+    setattr(DefaultTrainer, _attr,
+            property(lambda self, x=_attr: getattr(self._trainer, x, None)))
